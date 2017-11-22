@@ -21,7 +21,7 @@
 
 #include <zmq.h>
 
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/err.h"
 #include "bxi/base/time.h"
@@ -241,7 +241,7 @@ bxierr_p bxizmq_zocket_bind(void * const zocket,
         }
         if (NULL != ip) {
             translate_url = bxistr_new("%s://%s:%s", elements[0], ip, elements[2]);
-            BXIFREE(ip);
+            _BXIFREE(ip);
             int rc = zmq_bind(zocket, translate_url);
             if (rc == -1) {
                 //Neither url works
@@ -686,7 +686,7 @@ bxierr_p bxizmq_data_rcv(void ** result, const size_t expected_size,
     if (NULL == *result) {
         // Malloc either the received size if expected size was not specified or
         // the expected size otherwise.
-        *result = bximem_calloc(expected_size == 0 ? rcv_size : expected_size);
+        *result = _bximem_calloc(expected_size == 0 ? rcv_size : expected_size);
     }
     memcpy(*result, zmq_msg_data(&mzg), rcv_size);
 
@@ -757,7 +757,7 @@ bxierr_p bxizmq_str_rcv(void * const zocket, const int flags, const bool check_m
     }
     size_t len = zmq_msg_size(&mzg);
     // calloc, fills with 0, no need to add the NULL terminating byte
-    *result = bximem_calloc(len + 1);
+    *result = _bximem_calloc(len + 1);
     memcpy(*result, zmq_msg_data(&mzg), len);
     new = bxizmq_msg_close(&mzg);
     BXIERR_CHAIN(current, new);
@@ -769,7 +769,7 @@ bxierr_p bxizmq_str_rcv(void * const zocket, const int flags, const bool check_m
 // Used by bxizmq_snd_str_zc() for freeing a simple mallocated string
 void bxizmq_data_free(void * const data, void * const hint) {
     UNUSED(hint);
-    BXIFREE(data);
+    _BXIFREE(data);
 }
 
 bxierr_p bxizmq_sync_pub(void * pub_zocket,
@@ -823,7 +823,7 @@ bxierr_p bxizmq_sync_pub(void * pub_zocket,
             if (0 == strncmp(sync_url, synced, sync_url_len)) {
                 DBG("Correct request received %s through %p exiting PUB sync\n",
                     synced, sync_zocket);
-                BXIFREE(synced);
+                _BXIFREE(synced);
                 return err;
             }
             return bxierr_new(BXIZMQ_PROTOCOL_ERR, NULL, NULL, NULL, err,
@@ -871,7 +871,7 @@ bxierr_p bxizmq_sync_sub(void * zmq_ctx,
                 err2 = bxizmq_str_rcv(sub_zocket, ZMQ_DONTWAIT, false, &sync_url);
                 BXIERR_CHAIN(err, err2);
                 DBG("Received %s through %p\n", sync_url, sub_zocket);
-                BXIFREE(key);
+                _BXIFREE(key);
                 // We received something
                 if (NULL != sync_url) break;
             } else {
@@ -904,7 +904,7 @@ bxierr_p bxizmq_sync_sub(void * zmq_ctx,
     DBG("Sending %s through %p\n", sync_url, sync_zocket);
     err2 = bxizmq_str_snd(sync_url, sync_zocket, ZMQ_DONTWAIT, 0, 0);
     BXIERR_CHAIN(err, err2);
-    BXIFREE(sync_url);
+    _BXIFREE(sync_url);
 
     // Let the client decide for himself whether he wants sync messages or not
 //    err2 = bxizmq_zocket_setopt(sub_zocket, ZMQ_UNSUBSCRIBE,
@@ -928,7 +928,7 @@ bxierr_p bxizmq_sync_sub(void * zmq_ctx,
     }
 
 //    while (key != NULL) {
-//        BXIFREE(key);
+//        _BXIFREE(key);
 //        key = NULL;
 //        err2 = bxizmq_str_rcv(sub_zocket, ZMQ_DONTWAIT, false, &key);
 //        BXIERR_CHAIN(err, err2);
@@ -969,7 +969,7 @@ bxierr_p bxizmq_sub_sync_manage(void * zmq_ctx,
     DBG("Sending %s through %p\n", sync_url, sync_zocket);
     err2 = bxizmq_str_snd(sync_url, sync_zocket, 0, 0, 0);
     BXIERR_CHAIN(err, err2);
-    BXIFREE(sync_url);
+    _BXIFREE(sync_url);
 
     err2 = bxizmq_zocket_destroy(&sync_zocket);
     BXIERR_CHAIN(err, err2);
@@ -1002,7 +1002,7 @@ bxierr_p bxizmq_sync_pub_many(void * const zmq_ctx,
     if (bxierr_isko(err)) return err;
 
     const char * const url = bxizmq_create_url_from(sync_url, tcp_port);
-    BXIFREE(sync_url);
+    _BXIFREE(sync_url);
     // We generate a key of the format: .bxizmq/sync|url
     // This key will be unique (hopefully) among multiple publishers
     // so subscribers can drops message only of those
@@ -1082,8 +1082,8 @@ bxierr_p bxizmq_sync_pub_many(void * const zmq_ctx,
         BXIERR_CHAIN(err, err2);
     }
 
-    BXIFREE(url);
-    BXIFREE(key);
+    _BXIFREE(url);
+    _BXIFREE(key);
     if (NULL != sync_zocket) {
         // Don't care here
         DBG("PUB[%s]: destroying socket %p\n", url, sync_zocket);
@@ -1167,23 +1167,23 @@ bxierr_p bxizmq_sync_sub_many(void * const zmq_ctx,
                                              header, &already_pinged_root);
                 BXIERR_CHAIN(err, err2);
                 // Do not free header here, it is inserted in the binary tree already_pinged_root
-                // BXIFREE(header);
+                // _BXIFREE(header);
             } else if (0 == strncmp(BXIZMQ_PUBSUB_SYNC_LAST, header,
                              ARRAYLEN(BXIZMQ_PUBSUB_SYNC_LAST) - 1)) {
                 // We received a 'last' message
                 err2 = _process_sub_last_msg(sync_zocket, &missing_last_msg_nb, pub_nb);
                 BXIERR_CHAIN(err, err2);
-                BXIFREE(header);
+                _BXIFREE(header);
             } else {
                 err2 = bxierr_simple(BXIZMQ_PROTOCOL_ERR,
                                      "Wrong pub/sub sync header message received: '%s'",
                                      header);
                 BXIERR_CHAIN(err, err2);
-                BXIFREE(header);
+                _BXIFREE(header);
                 break;
             }
             // Do not free header here, it is inserted in the binary tree already_pinged_root
-            // BXIFREE(header);
+            // _BXIFREE(header);
         }
 
         if (poll_set[1].revents & ZMQ_POLLIN) {
@@ -1202,10 +1202,10 @@ bxierr_p bxizmq_sync_sub_many(void * const zmq_ctx,
                 err2 = bxierr_simple(BXIZMQ_PROTOCOL_ERR,
                                      "Wrong header message received: '%s'", msg);
                 BXIERR_CHAIN(err, err2);
-                BXIFREE(msg);
+                _BXIFREE(msg);
                 break;
             }
-            BXIFREE(msg);
+            _BXIFREE(msg);
         }
     }
 
@@ -1220,7 +1220,7 @@ bxierr_p bxizmq_sync_sub_many(void * const zmq_ctx,
     while (NULL != already_pinged_root) {
         char * header = *(char **) already_pinged_root;
         tdelete(header, &already_pinged_root, (_compar_fn_t) strcmp);
-        BXIFREE(header);
+        _BXIFREE(header);
     }
 #endif
 
@@ -1258,7 +1258,7 @@ bxierr_p bxizmq_generate_new_url_from(const char * const url, char ** result) {
     if (0 == strncmp("tcp", url, ARRAYLEN("tcp") - 1)) {
         char * colon = strrchr(url + ARRAYLEN("tcp://") - 1, ':');
         size_t len = (size_t) (colon - url);
-        *result = bximem_calloc((len + ARRAYLEN(":*")) * sizeof(**result));
+        *result = _bximem_calloc((len + ARRAYLEN(":*")) * sizeof(**result));
         memcpy(*result, url, len);
         memcpy(*result + len, ":*", strlen(":*"));
         return BXIERR_OK;
@@ -1291,7 +1291,7 @@ bxierr_p bxizmq_err(int errnum, const char * fmt, ...) {
     bxistr_vnew(&msg, fmt, ap);
 
     bxierr_p result = bxierr_new(errnum, NULL, NULL, NULL, NULL, "%s: %s", msg, errmsg);
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     va_end(ap);
 
@@ -1448,7 +1448,7 @@ bxierr_p _process_pub_sync_msg(void * const pub_zocket,
             err2 = bxizmq_str_snd(last, pub_zocket, 0, 0, 0);
             BXIERR_CHAIN(err, err2);
             DBG("PUB[%s]: snd '%s'\n", url, last);
-            BXIFREE(last);
+            _BXIFREE(last);
         }
 
     } else if (0 == strncmp(BXIZMQ_PUBSUB_SYNC_GO,
@@ -1464,7 +1464,7 @@ bxierr_p _process_pub_sync_msg(void * const pub_zocket,
         BXIERR_CHAIN(err, err2);
     }
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
     err2 = bxizmq_msg_close(&id);
     BXIERR_CHAIN(err, err2);
     return err;
@@ -1484,15 +1484,15 @@ bxierr_p _process_sub_ping_msg(void* sub_zocket, void * sync_zocket,
         err2 = bxizmq_str_rcv(sub_zocket, 0, false, &tmp);
         BXIERR_CHAIN(err, err2);
         DBG("SUB: dropping '%s'\n", tmp);
-        BXIFREE(tmp);
-        BXIFREE(header);
+        _BXIFREE(tmp);
+        _BXIFREE(header);
     } else {
         // First time seen, it has been automatically added to the tree
         // by tsearch() -> launch the sync process
         err2  = _sync_sub_send_pong(sub_zocket, sync_zocket);
         BXIERR_CHAIN(err, err2);
         // Do not free header, it is in the tree!
-        // BXIFREE(header);
+        // _BXIFREE(header);
     }
 
     return err;
@@ -1518,7 +1518,7 @@ bxierr_p _sync_sub_send_pong(void * sub_zocket, void * sync_zocket) {
     BXIERR_CHAIN(err, err2);
     DBG("DEALER: snd '%s'\n", BXIZMQ_PUBSUB_SYNC_PONG);
 
-    BXIFREE(sync_url);
+    _BXIFREE(sync_url);
 
     return err;
 }

@@ -21,7 +21,7 @@
 #include <net-snmp/net-snmp-includes.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 
@@ -140,7 +140,7 @@ bxilog_handler_param_p _param_new(bxilog_handler_p self,
 
     va_end(ap);
 
-    bxilog_snmplog_handler_param_p result = bximem_calloc(sizeof(*result));
+    bxilog_snmplog_handler_param_p result = _bximem_calloc(sizeof(*result));
     bxilog_handler_init_param(self, filters, &result->generic);
 
     return (bxilog_handler_param_p) result;
@@ -263,13 +263,13 @@ bxierr_p _process_ierr(bxierr_p *err, bxilog_snmplog_handler_param_p data) {
                         "available in your program if it uses the full BXI "
                         "high performance logging library.\n",
                         err_str, (*err)->code);
-        BXIFREE(err_str);
+        _BXIFREE(err_str);
     }
 
     if (bxierr_isko(result)) {
         result = bxierr_new(BXILOG_HANDLER_EXIT_CODE, result, NULL, NULL, NULL,
                             "Fatal: error while processing error: %s", err_str);
-        BXIFREE(err_str);
+        _BXIFREE(err_str);
     } else if (data->errset->total_seen_nb >= data->error_limit) {
         result = bxierr_new(BXILOG_HANDLER_EXIT_CODE, NULL, NULL, NULL, NULL,
                             "Fatal: too many errors (%zu distinct errors/%zu total errors)",
@@ -351,7 +351,7 @@ bxierr_p _internal_log_func(bxilog_level_e level,
                         data);
     BXIERR_CHAIN(err, err2);
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     return err;
 }

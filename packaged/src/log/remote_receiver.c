@@ -11,7 +11,7 @@
  ###############################################################################
  */
 
-#include <bxi/base/mem.h>
+#include <bxi/base/mem_base.h>
 #include <bxi/base/zmq.h>
 #include <bxi/base/log/remote_handler.h>
 #include <bxi/base/log/remote_receiver.h>
@@ -110,24 +110,24 @@ bxilog_remote_receiver_p bxilog_remote_receiver_new(const char ** urls, size_t u
         return NULL;
     }
 
-    bxilog_remote_receiver_p result = bximem_calloc(sizeof(*result));
+    bxilog_remote_receiver_p result = _bximem_calloc(sizeof(*result));
 
     if (NULL != hostname) {
         result->hostname = strdup(hostname);
     }
 
     result->urls_nb = urls_nb;
-    result->urls = bximem_calloc(urls_nb * sizeof(*result->urls));
+    result->urls = _bximem_calloc(urls_nb * sizeof(*result->urls));
     for (size_t i = 0; i < urls_nb; i++) {
         result->urls[i] = strdup(urls[i]);  // Strdup because the string can come from
                                             // higher level language which might garbage
                                             // collect it!
     }
     if (bind) {
-        result->cfg_urls = bximem_calloc(urls_nb * sizeof(*result->cfg_urls));
+        result->cfg_urls = _bximem_calloc(urls_nb * sizeof(*result->cfg_urls));
     }
-    result->ctrl_urls = bximem_calloc(urls_nb * sizeof(*result->data_urls));
-    result->data_urls = bximem_calloc(urls_nb * sizeof(*result->data_urls));
+    result->ctrl_urls = _bximem_calloc(urls_nb * sizeof(*result->data_urls));
+    result->data_urls = _bximem_calloc(urls_nb * sizeof(*result->data_urls));
     result->bind = bind;
     result->pub_connected = 0;
 
@@ -137,19 +137,19 @@ bxilog_remote_receiver_p bxilog_remote_receiver_new(const char ** urls, size_t u
 void bxilog_remote_receiver_destroy(bxilog_remote_receiver_p *self_p) {
     bxilog_remote_receiver_p self = *self_p;
     for (size_t i = 0; i < self->urls_nb; i++) {
-        BXIFREE(self->urls[i]);
+        _BXIFREE(self->urls[i]);
         if (self->bind) {
-            BXIFREE(self->cfg_urls[i]);
+            _BXIFREE(self->cfg_urls[i]);
         }
-        BXIFREE(self->ctrl_urls[i]);
-        BXIFREE(self->data_urls[i]);
+        _BXIFREE(self->ctrl_urls[i]);
+        _BXIFREE(self->data_urls[i]);
 
     }
-    BXIFREE(self->urls);
-    BXIFREE(self->hostname);
-    if (self->bind) BXIFREE(self->cfg_urls);
-    BXIFREE(self->ctrl_urls);
-    BXIFREE(self->data_urls);
+    _BXIFREE(self->urls);
+    _BXIFREE(self->hostname);
+    if (self->bind) _BXIFREE(self->cfg_urls);
+    _BXIFREE(self->ctrl_urls);
+    _BXIFREE(self->data_urls);
     bximem_destroy((char**) self_p);
 }
 
@@ -227,7 +227,7 @@ bxierr_p bxilog_remote_receiver_start(bxilog_remote_receiver_p self) {
         }
     }
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     return err;
 }
@@ -275,7 +275,7 @@ bxierr_p bxilog_remote_receiver_stop(bxilog_remote_receiver_p self,
         }
     }
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     TRACE(LOGGER, "Cleaning up");
     err2 = bxizmq_zocket_destroy(&self->bc2it_zock);
@@ -424,7 +424,7 @@ bxierr_p _recv_loop(bxilog_remote_receiver_p self) {
 
             err2 = _process_data_header(self, header, tsd, false);
             BXIERR_CHAIN(err, err2);
-            BXIFREE(header);
+            _BXIFREE(header);
             if (bxierr_isko(err)) break;
         }
     }
@@ -446,7 +446,7 @@ bxierr_p _process_ctrl_msg(bxilog_remote_receiver_p self, tsd_p tsd) {
     if (0 == strncmp(BXILOG_RECEIVER_EXIT, msg,
                      ARRAYLEN(BXILOG_RECEIVER_EXIT) - 1)) {
         FINE(LOGGER, "Received message '%s' indicating to exit", msg);
-        BXIFREE(msg);
+        _BXIFREE(msg);
 
         bool wait_remote_exit;
         bool *tmp_p = &wait_remote_exit;
@@ -487,7 +487,7 @@ bxierr_p _process_ctrl_msg(bxilog_remote_receiver_p self, tsd_p tsd) {
             TRACE(LOGGER, "Header '%s' remains to be processed while exiting", header);
             err2 = _process_data_header(self, header, tsd, true);
             BXIERR_CHAIN(err, err2);
-            BXIFREE(header);
+            _BXIFREE(header);
             if (bxierr_isko(err)) break;
             err2 = bxitime_get(CLOCK_MONOTONIC, &last_message);
             BXIERR_CHAIN(err, err2);
@@ -500,7 +500,7 @@ bxierr_p _process_ctrl_msg(bxilog_remote_receiver_p self, tsd_p tsd) {
         return bxierr_simple(_EXIT_NORMAL_ERR, "Normal error meaning exit");
     }
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
     return bxierr_gen("Unknown control message received: '%s'", msg);
 }
 
@@ -518,7 +518,7 @@ bxierr_p _process_data_header(bxilog_remote_receiver_p self, char *header, tsd_p
             char * sync_url = NULL;
             bxierr_p err = bxizmq_str_rcv(self->data_zock,
                                           ZMQ_DONTWAIT, false, &sync_url);
-            BXIFREE(sync_url);
+            _BXIFREE(sync_url);
             return err;
         }
         bxierr_p err = bxizmq_sub_sync_manage(self->zmq_ctx, self->data_zock);
@@ -537,7 +537,7 @@ bxierr_p _process_data_header(bxilog_remote_receiver_p self, char *header, tsd_p
              "Publisher %s has sent its exit message. "
              "Number of connected publishers: %zu",
              url, self->pub_connected);
-        BXIFREE(url);
+        _BXIFREE(url);
         return BXIERR_OK;
     }
     if (0 == strncmp(BXILOG_REMOTE_HANDLER_RECORD_HEADER,

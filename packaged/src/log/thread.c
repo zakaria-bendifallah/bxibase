@@ -13,7 +13,7 @@
 
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"

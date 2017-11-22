@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -127,18 +127,18 @@ void bxilog_handler_init_param(bxilog_handler_p handler,
 }
 
 void bxilog_handler_clean_param(bxilog_handler_param_p param) {
-    BXIFREE(param->ctrl_url);
-    BXIFREE(param->data_url);
+    _BXIFREE(param->ctrl_url);
+    _BXIFREE(param->data_url);
     bxilog_filters_destroy(&param->filters);
     // Do not free param since it has not been allocated by init()
-    // BXIFREE(param);
+    // _BXIFREE(param);
  }
 
 bxierr_p bxilog__handler_start(bxilog__handler_thread_bundle_p bundle) {
     bxilog_handler_p handler = bundle->handler;
     bxilog_handler_param_p param = bundle->param;
 
-    BXIFREE(bundle);
+    _BXIFREE(bundle);
 
     bxierr_p eerr = BXIERR_OK, eerr2; // External errors
     bxierr_p ierr = BXIERR_OK;        // Internal errors
@@ -310,11 +310,11 @@ bxierr_p _send_ready_status(bxilog_handler_p handler,
         bxierr_p result = bxierr_new(BXIZMQ_PROTOCOL_ERR, NULL, NULL, NULL, NULL,
                                      "Expected message '%s' but received '%s'",
                                      READY_CTRL_MSG_REQ, msg);
-        BXIFREE(msg);
+        _BXIFREE(msg);
         return result;
     }
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
     if (bxierr_isok(err)) {
         fatal_err = bxizmq_str_snd(READY_CTRL_MSG_REP, data->ctrl_zocket,
                                    ZMQ_SNDMORE, 0, 0);
@@ -332,7 +332,7 @@ bxierr_p _send_ready_status(bxilog_handler_p handler,
     // Send the error message
     char * err_str = bxierr_str(err);
     fatal_err = bxizmq_str_snd(err_str, data->ctrl_zocket, ZMQ_SNDMORE, 0, 0);
-    BXIFREE(err_str);
+    _BXIFREE(err_str);
     bxierr_abort_ifko(fatal_err);
     fatal_err = bxizmq_data_snd(&param->rank, sizeof(param->rank), data->ctrl_zocket,
                                 0, 0, 0);
@@ -585,7 +585,7 @@ bxierr_p _process_ctrl_cmd(bxilog_handler_p handler,
     }
 
     if (0 == strncmp(READY_CTRL_MSG_REQ, cmd, ARRAYLEN(READY_CTRL_MSG_REQ))) {
-        BXIFREE(cmd);
+        _BXIFREE(cmd);
 
         err2 = bxizmq_str_snd(READY_CTRL_MSG_REP, data->ctrl_zocket, ZMQ_SNDMORE, 0, 0);
         BXIERR_CHAIN(err, err2);
@@ -597,7 +597,7 @@ bxierr_p _process_ctrl_cmd(bxilog_handler_p handler,
     }
 
     if (0 == strncmp(FLUSH_CTRL_MSG_REQ, cmd, ARRAYLEN(FLUSH_CTRL_MSG_REQ))) {
-        BXIFREE(cmd);
+        _BXIFREE(cmd);
         err2 = _process_explicit_flush(handler, param, data);
         BXIERR_CHAIN(err, err2);
         err2 = bxizmq_str_snd(FLUSH_CTRL_MSG_REP, data->ctrl_zocket, 0, 0, 0);
@@ -605,7 +605,7 @@ bxierr_p _process_ctrl_cmd(bxilog_handler_p handler,
         return err;
     }
     if (0 == strncmp(EXIT_CTRL_MSG_REQ, cmd, ARRAYLEN(EXIT_CTRL_MSG_REQ))) {
-        BXIFREE(cmd);
+        _BXIFREE(cmd);
 
         err2 = _process_implicit_flush(handler, param, data);
         BXIERR_CHAIN(err, err2);
@@ -618,7 +618,7 @@ bxierr_p _process_ctrl_cmd(bxilog_handler_p handler,
     }
     err2 = bxierr_gen("%s: unknown control command: %s", handler->name, cmd);
     BXIERR_CHAIN(err, err2);
-    BXIFREE(cmd);
+    _BXIFREE(cmd);
     return err;
 }
 

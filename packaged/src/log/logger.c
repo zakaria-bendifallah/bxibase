@@ -39,7 +39,7 @@
 #include <zmq.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -144,8 +144,8 @@ void bxilog_logger_free(bxilog_logger_p self) {
     if (NULL == self) return;
     if (!(self)->allocated) return;
 
-    BXIFREE((self)->name);
-    BXIFREE(self);
+    _BXIFREE((self)->name);
+    _BXIFREE(self);
 }
 
 void bxilog_logger_destroy(bxilog_logger_p * self_p) {
@@ -213,7 +213,7 @@ bxierr_p bxilog_logger_vlog_nolevelcheck(const bxilog_logger_p logger,
             break;
         }
 
-        if (logmsg_allocated) BXIFREE(logmsg);
+        if (logmsg_allocated) _BXIFREE(logmsg);
         // Not enough space, mallocate a new special buffer of the precise size
         logmsg_len = (size_t) (n + 1);
         logmsg = malloc(logmsg_len); // Include the null terminated byte
@@ -243,7 +243,7 @@ bxierr_p bxilog_logger_vlog_nolevelcheck(const bxilog_logger_p logger,
                          line,
                          logmsg, logmsg_len);
 
-    if (logmsg_allocated) BXIFREE(logmsg);
+    if (logmsg_allocated) _BXIFREE(logmsg);
     // Either record comes from the stack
     // or it comes from a mallocated region that will be freed
     // by bxizmq_snd_data_zc itself
@@ -311,7 +311,7 @@ bxierr_p _send2handlers(const bxilog_logger_p logger,
         char * err_str = bxierr_str(err);
         fprintf(stderr, "[W] Calling bxitime_get() failed: %s\n", err_str);
         bxierr_destroy(&err);
-        BXIFREE(err_str);
+        _BXIFREE(err_str);
         record->detail_time.tv_sec = 0;
         record->detail_time.tv_nsec = 0;
     }
@@ -355,6 +355,6 @@ bxierr_p _send2handlers(const bxilog_logger_p logger,
             BXIERR_CHAIN(err, err2);
         }
     }
-    BXIFREE(record);
+    _BXIFREE(record);
     return err;
 }

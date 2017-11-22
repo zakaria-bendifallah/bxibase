@@ -15,7 +15,7 @@
 #include <string.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/zmq.h"
 #include "bxi/base/time.h"
@@ -133,7 +133,7 @@ bxilog_handler_param_p _param_new(bxilog_handler_p self,
                                       // bool will be promoted to int
     va_end(ap);
 
-    bxilog_remote_handler_param_p result = bximem_calloc(sizeof(*result));
+    bxilog_remote_handler_param_p result = _bximem_calloc(sizeof(*result));
     bxilog_handler_init_param(self, filters, &result->generic);
 
     if (bind_flag) {
@@ -193,7 +193,7 @@ bxierr_p _init(bxilog_remote_handler_param_p data) {
         BXIERR_CHAIN(err, err2);
 
         data->pub_url = bxizmq_create_url_from(pub_url, port);
-        BXIFREE(pub_url);
+        _BXIFREE(pub_url);
 
         DBG("Data zocket binded to %s\n", data->pub_url);
 
@@ -276,11 +276,11 @@ bxierr_p _init(bxilog_remote_handler_param_p data) {
         if (bxierr_isko(tmp)) bxierr_report(&tmp, STDERR_FILENO);
     }
     data->generic.private_items_nb = 1;
-    data->generic.private_items = bximem_calloc(data->generic.private_items_nb * \
+    data->generic.private_items = _bximem_calloc(data->generic.private_items_nb * \
                                                 sizeof(*data->generic.private_items));
     data->generic.private_items[0].socket = data->ctrl_zock;
     data->generic.private_items[0].events = ZMQ_POLLIN;
-    data->generic.cbs = bximem_calloc(data->generic.private_items_nb * \
+    data->generic.cbs = _bximem_calloc(data->generic.private_items_nb * \
                                       sizeof(*data->generic.cbs));
     data->generic.cbs[0] = (bxilog_handler_cbs) _process_ctrl_msg;
 
@@ -327,9 +327,9 @@ bxierr_p _process_exit(bxilog_remote_handler_param_p data) {
     err2 = bxizmq_context_destroy(&data->ctx);
     BXIERR_CHAIN(err, err2);
 
-    BXIFREE(data->pub_url);
-    BXIFREE(data->generic.private_items);
-    BXIFREE(data->generic.cbs);
+    _BXIFREE(data->pub_url);
+    _BXIFREE(data->generic.private_items);
+    _BXIFREE(data->generic.cbs);
 
     return err;
 }
@@ -395,8 +395,8 @@ bxierr_p _param_destroy(bxilog_remote_handler_param_p * data_p) {
     bxilog_remote_handler_param_p data = *data_p;
     bxilog_handler_clean_param(&data->generic);
 
-    BXIFREE(data->ctrl_url);
-    BXIFREE(data->hostname);
+    _BXIFREE(data->ctrl_url);
+    _BXIFREE(data->hostname);
 
     bximem_destroy((char**) data_p);
 
@@ -523,9 +523,9 @@ bxierr_p _process_get_cfg_msg(bxilog_remote_handler_param_p data, zmq_msg_t id_f
         handlers_str_parts_len[i] = strlen(handlers_str_parts[i]);
 
         for (size_t f = 0; f < filters->nb; f++) {
-            BXIFREE(filters_str_parts[f]);
+            _BXIFREE(filters_str_parts[f]);
         }
-        BXIFREE(filters_str);
+        _BXIFREE(filters_str);
     }
     char * handlers_str = NULL;
     bxistr_join(", ", strlen(", "),
@@ -567,19 +567,19 @@ bxierr_p _process_get_cfg_msg(bxilog_remote_handler_param_p data, zmq_msg_t id_f
     err2 = bxizmq_str_snd(json_str, data->ctrl_zock, 0, 0, 0);
     BXIERR_CHAIN(err, err2);
 
-    BXIFREE(global_str);
-    BXIFREE(handlers_str);
+    _BXIFREE(global_str);
+    _BXIFREE(handlers_str);
     for (size_t i = 0; i < BXILOG__GLOBALS->internal_handlers_nb; i++) {
-        BXIFREE(handlers_str_parts[i]);
+        _BXIFREE(handlers_str_parts[i]);
     }
 
-    BXIFREE(loggers_str);
+    _BXIFREE(loggers_str);
     for (size_t i = 0; i < loggers_nb; i++) {
-        BXIFREE(loggers_str_parts[i]);
+        _BXIFREE(loggers_str_parts[i]);
     }
-    BXIFREE(json_str);
+    _BXIFREE(json_str);
 
-    BXIFREE(loggers);
+    _BXIFREE(loggers);
 
     return err;
 
@@ -596,7 +596,7 @@ bxierr_p _sync_pub(bxilog_remote_handler_param_p data) {
         if (data->bind) {
             char * tmp_url = bxistr_new("%s-sync", data->ctrl_url);
             err2 = bxizmq_generate_new_url_from(tmp_url, &url);
-            BXIFREE(tmp_url);
+            _BXIFREE(tmp_url);
             BXIERR_CHAIN(err, err2);
         } else {
             err2 = bxizmq_generate_new_url_from(data->pub_url, &url);
@@ -619,8 +619,8 @@ bxierr_p _sync_pub(bxilog_remote_handler_param_p data) {
                            strlen(actual_url),
                            data->timeout_s);
     BXIERR_CHAIN(err, err2);
-    BXIFREE(url);
-    BXIFREE(actual_url);
+    _BXIFREE(url);
+    _BXIFREE(actual_url);
     err2 = bxizmq_zocket_destroy(&sync_zock);
     BXIERR_CHAIN(err, err2);
 

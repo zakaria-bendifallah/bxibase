@@ -16,7 +16,7 @@
 #include <string.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -138,8 +138,8 @@ void _report_err(bxilog_logger_p logger, bxilog_level_e level, bxierr_p * err_p,
                                 "on stderr. Especially, it won't appear in the "
                                 "expected logging file.)\n", msg, err_str);
         bxilog_rawprint(out, STDERR_FILENO);
-        BXIFREE(out);
-        BXIFREE(err_str);
+        _BXIFREE(out);
+        _BXIFREE(err_str);
     } else {
         bxierr_report_p report = bxierr_report_new();
         bxierr_report_add_from_limit(*err_p, report, BXIERR_ALL_CAUSES);
@@ -153,6 +153,6 @@ void _report_err(bxilog_logger_p logger, bxilog_level_e level, bxierr_p * err_p,
         bxierr_report_destroy(&report);
 
     }
-    BXIFREE(msg);
+    _BXIFREE(msg);
 }
 

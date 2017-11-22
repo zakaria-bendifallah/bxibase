@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #endif
 
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/err.h"
 
 #include "bxi/base/log/handler.h"

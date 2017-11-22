@@ -25,7 +25,7 @@
 
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 
@@ -218,7 +218,7 @@ bxilog_handler_param_p _param_new(bxilog_handler_p self,
     int open_flags = va_arg(ap, int);
     va_end(ap);
 
-    bxilog_file_handler_param_p result = bximem_calloc(sizeof(*result));
+    bxilog_file_handler_param_p result = _bximem_calloc(sizeof(*result));
     bxilog_handler_init_param(self, filters, &result->generic);
 
     result->filename = strdup(filename);
@@ -292,7 +292,7 @@ bxierr_p _process_exit(bxilog_file_handler_param_p data) {
 //        if (bxierr_isko(err)) {
 //            char * err_msg = bxierr_str(err);
 //            bxilog_rawprint(err_msg, STDERR_FILENO);
-//            BXIFREE(err_msg);
+//            _BXIFREE(err_msg);
 //            bxierr_destroy(&err);
 //        }
 
@@ -317,7 +317,7 @@ bxierr_p _process_exit(bxilog_file_handler_param_p data) {
                                 data->bytes_lost,
                                 data->errset->distinct_err.errors_nb);
         bxilog_rawprint(str, STDERR_FILENO);
-        BXIFREE(str);
+        _BXIFREE(str);
     }
 
     if (0 < data->errset->distinct_err.errors_nb) {
@@ -328,7 +328,7 @@ bxierr_p _process_exit(bxilog_file_handler_param_p data) {
     } else {
         bxierr_set_destroy(&data->errset);
     }
-    BXIFREE(data->buf);
+    _BXIFREE(data->buf);
 
 //    fprintf(stderr, "%d.%d: process_exit: ok\n", data->pid, data->tid);
     return err;
@@ -409,7 +409,7 @@ bxierr_p _process_ierr(bxierr_p *err, bxilog_file_handler_param_p data) {
                                 "Fatal: error while processing internal error: %s",
                                 str);
         }
-        BXIFREE(str);
+        _BXIFREE(str);
     }
 
     if (data->errset->total_seen_nb > data->err_max) {
@@ -443,8 +443,8 @@ inline bxierr_p _param_destroy(bxilog_file_handler_param_p * data_p) {
 
     bxilog_handler_clean_param(&data->generic);
 
-    BXIFREE(data->progname);
-    BXIFREE(data->filename);
+    _BXIFREE(data->progname);
+    _BXIFREE(data->filename);
     bximem_destroy((char**) data_p);
     return BXIERR_OK;
 }
@@ -475,7 +475,7 @@ bxierr_p _log_single_line(char * line,
 
     char * buf;
     if (size > data->buf_size) {
-        buf = bximem_calloc(size + 1); // Include the NULL terminating byte since we
+        buf = _bximem_calloc(size + 1); // Include the NULL terminating byte since we
                                        // use a specific buffer.
     } else {
         buf = data->buf + data->next_char;
@@ -500,7 +500,7 @@ bxierr_p _log_single_line(char * line,
 
     if (size > data->buf_size) {
         bxierr_p err = _write(data, buf, size);
-        BXIFREE(buf);
+        _BXIFREE(buf);
         return err;
     }
 
@@ -688,7 +688,7 @@ bxierr_p _internal_log_func(bxilog_level_e level,
                         data);
     BXIERR_CHAIN(err, err2);
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     return err;
 }
@@ -709,8 +709,8 @@ void _record_new_error(bxilog_file_handler_param_p data, bxierr_p * err) {
                 "high performance logging library.\n",
                 data->filename, err_str);
         bxilog_rawprint(str, STDERR_FILENO);
-        BXIFREE(err_str);
-        BXIFREE(str);
+        _BXIFREE(err_str);
+        _BXIFREE(str);
     } else {
         bxierr_destroy(err);
     }

@@ -15,10 +15,8 @@
 #include <assert.h>
 #include <string.h>
 
-#include "bxi/base/mem.h"
 #include "bxi/base/mem_base.h"
 #include "bxi/base/err.h"
-#include "bxi/base/log.h"
 
 // *********************************************************************************
 // ********************************** Defines **************************************
@@ -36,16 +34,14 @@
 // *********************************************************************************
 // ********************************** Global Variables *****************************
 // *********************************************************************************
-SET_LOGGER(MINSTRU_LOGGER, "MINSTRU");
-
 
 // *********************************************************************************
 // ********************************** Implementation   *****************************
 // *********************************************************************************
 
-void * bximem_calloc(const size_t n) {
-    void * ptr = _bximem_calloc(n);
-    TRACE(MINSTRU_LOGGER, "A:%lu:%p", n, ptr);
+void * _bximem_calloc(const size_t n) {
+    void * ptr = calloc(1, n);
+    assert(ptr != NULL || n == 0);
     return(ptr);
 }
 
@@ -54,21 +50,35 @@ void * bximem_calloc(const size_t n) {
  *
  * Note: If ptr is NULL, acts like bximem_calloc
  */
-void * bximem_realloc(void* ptr, const size_t old_size, const size_t new_size) {
-    char *new_ptr =  _bximem_realloc(ptr, old_size, new_size);
-    if((new_ptr != NULL) && (new_ptr != ptr))
-    {
-        TRACE(MINSTRU_LOGGER, "F:%p", ptr);
-        TRACE(MINSTRU_LOGGER, "A:%lu:%p", new_size, new_ptr);
+void * _bximem_realloc(void* ptr, const size_t old_size, const size_t new_size) {
+    char * new_ptr = realloc(ptr, new_size);
+    if (new_ptr == NULL && new_size != 0) {
+        bxierr_p err = bxierr_gen("Calling realloc(%p, %zu) failed!", ptr, new_size);
+        char * str = bxierr_str(err);
+        fprintf(stderr, "%s", str);
+        BXIFREE(str);
+        bxierr_destroy(&err);
+        return NULL;
+    }
+    if (old_size < new_size) {
+        // Initialize the memory.
+        memset(new_ptr + old_size, 0, new_size - old_size);
     }
     return new_ptr;
 }
 
 
-void bximem_destroy(char ** pointer) {
+void _bximem_destroy(char ** pointer) {
 
-    TRACE(MINSTRU_LOGGER, "F:%p", *pointer);
-    _bximem_destroy(pointer);
+    // Freeing a NULL pointer is allowed and does nothing.
+    // Therefore, it is not required to check for *pointer.
+
+    // So *DO NOT* UNCOMMENT THE FOLLOWING LINE UNLESS YOU HAVE GOOD REASONS!! ;-)
+    //    if (pointer == NULL || *pointer == NULL) return;
+
+    if (pointer == NULL) return;
+    free(*pointer); // Allowed!
+    *pointer = NULL;
 }
 
 // *********************************************************************************

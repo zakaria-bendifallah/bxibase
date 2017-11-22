@@ -21,7 +21,7 @@
 #include <backtrace.h>
 #include <backtrace-supported.h>
 
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/err.h"
 
@@ -89,7 +89,7 @@ bxierr_p bxierr_new(int code,
                     const char * fmt,
                     ...) {
 
-    bxierr_p self = bximem_calloc(sizeof(*self));
+    bxierr_p self = _bximem_calloc(sizeof(*self));
     self->code = code;
     char * tmp = NULL;
     self->backtrace_len = bxierr_backtrace_str(&tmp);
@@ -126,20 +126,20 @@ void bxierr_free(bxierr_p self) {
         self->free_fn(self->data);
         self->data = NULL;
     }
-    BXIFREE(self->msg);
-    BXIFREE(self->backtrace);
-    BXIFREE(self);
+    _BXIFREE(self->msg);
+    _BXIFREE(self->backtrace);
+    _BXIFREE(self);
 }
 
 
 bxierr_report_p bxierr_report_new() {
-    bxierr_report_p self = bximem_calloc(sizeof(*self));
+    bxierr_report_p self = _bximem_calloc(sizeof(*self));
     self->err_nb = 0;
     self->allocated = 1;
-    self->err_msglens = bximem_calloc(self->allocated * sizeof(*self->err_msglens));
-    self->err_btslens = bximem_calloc(self->allocated * sizeof(*self->err_btslens));
-    self->err_msgs = bximem_calloc(self->allocated * sizeof(*self->err_msgs));
-    self->err_bts = bximem_calloc(self->allocated * sizeof(*self->err_bts));
+    self->err_msglens = _bximem_calloc(self->allocated * sizeof(*self->err_msglens));
+    self->err_btslens = _bximem_calloc(self->allocated * sizeof(*self->err_btslens));
+    self->err_msgs = _bximem_calloc(self->allocated * sizeof(*self->err_msgs));
+    self->err_bts = _bximem_calloc(self->allocated * sizeof(*self->err_bts));
 
     return self;
 }
@@ -150,17 +150,17 @@ void bxierr_report_add(bxierr_report_p report,
 
     if (report->err_nb >= report->allocated) {
         size_t new_size = 2 * report->allocated;
-        report->err_msglens = bximem_realloc(report->err_msglens,
+        report->err_msglens = _bximem_realloc(report->err_msglens,
                                              report->allocated * sizeof(*report->err_msglens),
                                              new_size * sizeof(*report->err_msglens));
-        report->err_btslens = bximem_realloc(report->err_btslens,
+        report->err_btslens = _bximem_realloc(report->err_btslens,
                                            report->allocated * sizeof(*report->err_btslens),
                                            new_size * sizeof(*report->err_btslens));
 
-        report->err_msgs = bximem_realloc(report->err_msgs,
+        report->err_msgs = _bximem_realloc(report->err_msgs,
                                         report->allocated * sizeof(*report->err_msgs),
                                         new_size * sizeof(*report->err_msgs));
-        report->err_bts = bximem_realloc(report->err_bts,
+        report->err_bts = _bximem_realloc(report->err_bts,
                                        report->allocated * sizeof(*report->err_btslens),
                                        new_size * sizeof(*report->err_btslens));
         report->allocated = new_size;
@@ -179,14 +179,14 @@ void bxierr_report_free(bxierr_report_p report) {
     if (NULL == report) return;
 
     for (size_t i = 0; i < report->err_nb; i++) {
-        BXIFREE(report->err_bts[i]);
-        BXIFREE(report->err_msgs[i]);
+        _BXIFREE(report->err_bts[i]);
+        _BXIFREE(report->err_msgs[i]);
     }
-    BXIFREE(report->err_msglens);
-    BXIFREE(report->err_btslens);
-    BXIFREE(report->err_msgs);
-    BXIFREE(report->err_bts);
-    BXIFREE(report);
+    _BXIFREE(report->err_msglens);
+    _BXIFREE(report->err_btslens);
+    _BXIFREE(report->err_msgs);
+    _BXIFREE(report->err_bts);
+    _BXIFREE(report);
 }
 
 
@@ -211,7 +211,7 @@ void bxierr_report_add_from_limit(bxierr_p self, bxierr_report_p report, size_t 
     size_t bt_len = (NULL == self->backtrace) ? 1 : (self->backtrace_len + 1);
 
     bxierr_report_add(report, result, strlen(result) + 1, bt, bt_len);
-    BXIFREE(result);
+    _BXIFREE(result);
 
     if (NULL == self->cause) {
         // Nothing to do!
@@ -219,7 +219,7 @@ void bxierr_report_add_from_limit(bxierr_p self, bxierr_report_p report, size_t 
         size_t remaining = bxierr_get_depth(self->cause);
         char * cause_str = bxistr_new("...<%zu more causes>", remaining);
         bxierr_report_add(report, cause_str, strlen(cause_str) + 1, "", 1);
-        BXIFREE(cause_str);
+        _BXIFREE(cause_str);
     } else {
         bxierr_report_add(report, CAUSED_BY_STR, ARRAYLEN(CAUSED_BY_STR), "", 1);
         if (self->cause->add_to_report != NULL) {
@@ -230,7 +230,7 @@ void bxierr_report_add_from_limit(bxierr_p self, bxierr_report_p report, size_t 
     }
 
     bxistr_prefixer_cleanup(&data);
-    BXIFREE(final_msg);
+    _BXIFREE(final_msg);
 }
 
 size_t bxierr_report_str(bxierr_report_p report, char** result_p) {
@@ -252,7 +252,7 @@ size_t bxierr_report_str(bxierr_report_p report, char** result_p) {
     size_t len = bxistr_join("\n", ARRAYLEN("\n") - 1, lines, lines_len, report->err_nb,
                              result_p);
     for (size_t i = 0; i < report->err_nb; i++) {
-        BXIFREE(lines[i]);
+        _BXIFREE(lines[i]);
     }
 
     return len;
@@ -269,7 +269,7 @@ void bxierr_report_keep(bxierr_p self, int fd) {
     char * errstr = bxierr_str(self);
     ssize_t count = write(fd, errstr, strlen(errstr));
     bxiassert(0 < count);
-    BXIFREE(errstr);
+    _BXIFREE(errstr);
 }
 
 char * bxierr_str_limit(bxierr_p self, size_t depth) {
@@ -347,7 +347,7 @@ bxierr_p bxierr_vfromidx(const int erridx,
     bxistr_vnew(&msg, fmt, ap);
 
     bxierr_p result = bxierr_new(erridx, NULL, NULL, NULL, NULL, "%s: %s", msg, errmsg);
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     return result;
 }
@@ -399,12 +399,12 @@ size_t bxierr_backtrace_str(char ** result) {
     for(int i = 0; i < c; i++) {
         fprintf(faked_file, ERR_BT_PREFIX"[%02d] %s\n", i,
                 NULL == strings[i] ? symbols[i] : strings[i]);
-        BXIFREE(strings[i]);
+        _BXIFREE(strings[i]);
     }
     fprintf(faked_file,ERR_BT_PREFIX"Backtrace end\n");
     fclose(faked_file);
-    BXIFREE(symbols);
-    BXIFREE(strings);
+    _BXIFREE(symbols);
+    _BXIFREE(strings);
     return size;
 }
 
@@ -440,7 +440,7 @@ void bxierr_unreachable_statement(const char *file,
 
 
 bxierr_list_p bxierr_list_new() {
-    bxierr_list_p result = bximem_calloc(sizeof(*result));
+    bxierr_list_p result = _bximem_calloc(sizeof(*result));
 
     _err_list_init(result);
 
@@ -455,8 +455,8 @@ void bxierr_list_free(bxierr_list_p errlist) {
         if (NULL == err) continue;
         bxierr_destroy(&err);
     }
-    BXIFREE(errlist->errors);
-    BXIFREE(errlist);
+    _BXIFREE(errlist->errors);
+    _BXIFREE(errlist);
 }
 
 void bxierr_list_append(bxierr_list_p list, bxierr_p err) {
@@ -464,7 +464,7 @@ void bxierr_list_append(bxierr_list_p list, bxierr_p err) {
         // Not enough space, allocate some new
         // Add one to prevent product with zero!
         size_t new_len = (list->errors_size + 1) * 2;
-        list->errors = bximem_realloc(list->errors,
+        list->errors = _bximem_realloc(list->errors,
                                       list->errors_size*sizeof(*list->errors),
                                       new_len*sizeof(*list->errors));
         list->errors_size = new_len;
@@ -490,11 +490,11 @@ void bxierr_list_add_to_report(bxierr_p err, bxierr_report_p report, size_t dept
 }
 
 bxierr_set_p bxierr_set_new() {
-    bxierr_set_p result = bximem_calloc(sizeof(*result));
+    bxierr_set_p result = _bximem_calloc(sizeof(*result));
 
     _err_list_init(&result->distinct_err);
 
-    result->seen_nb = bximem_calloc(result->distinct_err.errors_size * \
+    result->seen_nb = _bximem_calloc(result->distinct_err.errors_size * \
                                                             sizeof(*result->seen_nb));
     result->total_seen_nb = 0;
 
@@ -504,7 +504,7 @@ bxierr_set_p bxierr_set_new() {
 void bxierr_set_free(bxierr_set_p errset) {
     if (NULL == errset) return;
 
-    BXIFREE(errset->seen_nb);
+    _BXIFREE(errset->seen_nb);
     bxierr_list_free(&errset->distinct_err);
 }
 
@@ -532,7 +532,7 @@ bool bxierr_set_add(bxierr_set_p set, bxierr_p * err) {
         size_t old_len = set->distinct_err.errors_size;
         // Add one to prevent product with zero!
         size_t new_len = (set->distinct_err.errors_size + 1) * 2;
-        set->seen_nb = bximem_realloc(set->seen_nb,
+        set->seen_nb = _bximem_realloc(set->seen_nb,
                                       old_len*sizeof(*set->seen_nb),
                                       new_len*sizeof(*set->seen_nb));
     }
@@ -552,13 +552,13 @@ void _err_list_init(bxierr_list_p errlist) {
 
     errlist->errors_nb = 0;
     errlist->errors_size = 16;
-    errlist->errors = bximem_calloc(errlist->errors_size * sizeof(*errlist->errors));
+    errlist->errors = _bximem_calloc(errlist->errors_size * sizeof(*errlist->errors));
 }
 
 
 char** _pretty_backtrace(void* addresses[], int array_size) {
     // Used to return the strings generated from the addresses
-    char** backtrace_strings = bximem_calloc(sizeof(*backtrace_strings) * (unsigned)array_size);
+    char** backtrace_strings = _bximem_calloc(sizeof(*backtrace_strings) * (unsigned)array_size);
     for(int i = 0; i < array_size; i++) {
         int rc = backtrace_pcinfo(BT_STATE,
                                   (uintptr_t) addresses[i],

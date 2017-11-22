@@ -15,7 +15,7 @@
 #include <search.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -77,7 +77,7 @@ bxilog_filters_p BXILOG_FILTERS_ALL_ALL = (bxilog_filters_p) &BXILOG_FILTERS_ALL
 
 bxilog_filters_p  bxilog_filters_new() {
     size_t slots = 2;
-    bxilog_filters_p filters = bximem_calloc(sizeof(*filters) +\
+    bxilog_filters_p filters = _bximem_calloc(sizeof(*filters) +\
                                              slots*sizeof(filters->list[0]));
     filters->allocated = true;
     filters->nb = 0;
@@ -91,10 +91,10 @@ void bxilog_filters_free(bxilog_filters_p filters) {
     if (!filters->allocated) return;
 
     for (size_t i = 0; i < filters->nb; i++) {
-        BXIFREE(filters->list[i]->prefix);
-        BXIFREE(filters->list[i]);
+        _BXIFREE(filters->list[i]->prefix);
+        _BXIFREE(filters->list[i]);
     }
-    BXIFREE(filters);
+    _BXIFREE(filters);
 }
 
 void bxilog_filters_destroy(bxilog_filters_p * filters_p) {
@@ -111,7 +111,7 @@ void bxilog_filters_add(bxilog_filters_p * filters_p,
     bxiassert(NULL != *filters_p);
     bxiassert(NULL != prefix);
 
-    bxilog_filter_p filter = bximem_calloc(sizeof(*filter));
+    bxilog_filter_p filter = _bximem_calloc(sizeof(*filter));
     filter->prefix = strdup(prefix);
     filter->level = level;
 
@@ -122,7 +122,7 @@ void bxilog_filters_add(bxilog_filters_p * filters_p,
     if (filters->nb >= filters->allocated_slots) {
         size_t old = filters->allocated_slots;
         size_t new = old * 2;
-        filters = bximem_realloc(filters,
+        filters = _bximem_realloc(filters,
                                  sizeof(*filters) + old*sizeof(filters->list[0]),
                                  sizeof(*filters) + new*sizeof(filters->list[0]));
         filters->allocated_slots = new;
@@ -208,7 +208,7 @@ bxierr_p bxilog_filters_parse(char * str, bxilog_filters_p * result) {
     *result = filters;
 
 QUIT:
-    BXIFREE(str);
+    _BXIFREE(str);
     if (bxierr_isko(err)) bxilog_filters_destroy(&filters);
     return err;
 }
@@ -294,7 +294,7 @@ bxilog_filters_p bxilog_filters_merge(bxilog_filters_p * filters_array, size_t n
 //    // 2. we will destroy a binary tree at the end, and therefore, all filters inserted
 //    //    into it.
 //    // Therefore, it is better to use our own copy
-//    bxilog_filters_p * copied = bximem_calloc(n * sizeof(*copied));
+//    bxilog_filters_p * copied = _bximem_calloc(n * sizeof(*copied));
 //    for (size_t i = 0; i < n; i++) {
 //        bxilog_filters_p filters = filters_array[i];
 //        copied[i] = bxilog_filters_dup(filters);
@@ -332,7 +332,7 @@ bxilog_filters_p bxilog_filters_merge(bxilog_filters_p * filters_array, size_t n
 //    for (size_t i = 0; i < n; i++) {
 //        bxilog_filters_destroy(&copied[i]);
 //    }
-//    BXIFREE(copied);
+//    _BXIFREE(copied);
 //
 //    return result;
 //}

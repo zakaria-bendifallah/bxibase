@@ -19,7 +19,7 @@
 #include <syslog.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 
@@ -151,7 +151,7 @@ bxilog_handler_param_p _param_new(bxilog_handler_p self,
     const int facility = va_arg(ap, int);
     va_end(ap);
 
-    bxilog_syslog_handler_param_p result = bximem_calloc(sizeof(*result));
+    bxilog_syslog_handler_param_p result = _bximem_calloc(sizeof(*result));
     bxilog_handler_init_param(self, filters, &result->generic);
 
     const char * basename;
@@ -267,7 +267,7 @@ bxierr_p _process_ierr(bxierr_p *err, bxilog_syslog_handler_param_p data) {
     if (bxierr_isko(result)) {
         result = bxierr_new(BXILOG_HANDLER_EXIT_CODE, result, NULL, NULL, NULL,
                             "Fatal: error while processing error: %s", err_str);
-        BXIFREE(err_str);
+        _BXIFREE(err_str);
     } else if (data->error_nb >= data->error_limit) {
         result = bxierr_new(BXILOG_HANDLER_EXIT_CODE, NULL, NULL, NULL, NULL,
                             "Fatal: too many errors (%zu distinct errors/%zu total errors)",
@@ -290,7 +290,7 @@ inline bxierr_p _param_destroy(bxilog_syslog_handler_param_p * data_p) {
     bxilog_handler_clean_param(&data->generic);
 
     bxierr_set_destroy(&data->errset);
-    BXIFREE((*data_p)->ident);
+    _BXIFREE((*data_p)->ident);
     bximem_destroy((char**) data_p);
     return BXIERR_OK;
 }
@@ -349,7 +349,7 @@ bxierr_p _internal_log_func(bxilog_level_e level,
                         data);
     BXIERR_CHAIN(err, err2);
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     return err;
 }

@@ -61,13 +61,13 @@ void bxilog__tsd_free(void * const data) {
             err2 = bxizmq_zocket_destroy(&tsd->data_channel[i]);
             BXIERR_CHAIN(err, err2);
         }
-        BXIFREE(tsd->data_channel);
+        _BXIFREE(tsd->data_channel);
         err2 = bxizmq_zocket_destroy(&tsd->ctrl_channel);
         BXIERR_CHAIN(err, err2);
         if (bxierr_isko(err)) bxierr_report(&err, STDERR_FILENO);
     }
-    BXIFREE(tsd->log_buf);
-    BXIFREE(tsd);
+    _BXIFREE(tsd->log_buf);
+    _BXIFREE(tsd);
 }
 
 
@@ -101,14 +101,14 @@ bxierr_p bxilog__tsd_get(tsd_p * result) {
         return bxierr_gen("No zmq context available for socket creation");
     }
     errno = 0;
-    tsd = bximem_calloc(sizeof(*tsd));
+    tsd = _bximem_calloc(sizeof(*tsd));
     tsd->min_log_size = SIZE_MAX;
 
     bxiassert(NULL != BXILOG__GLOBALS->config->handlers);
     bxiassert(0 < BXILOG__GLOBALS->config->tsd_log_buf_size);
-    tsd->log_buf = bximem_calloc(BXILOG__GLOBALS->config->tsd_log_buf_size);
+    tsd->log_buf = _bximem_calloc(BXILOG__GLOBALS->config->tsd_log_buf_size);
     if (0 != BXILOG__GLOBALS->config->handlers_nb) {
-        tsd->data_channel = bximem_calloc(BXILOG__GLOBALS->config->handlers_nb * 
+        tsd->data_channel = _bximem_calloc(BXILOG__GLOBALS->config->handlers_nb * 
                                           sizeof(*tsd->data_channel));
     }
 

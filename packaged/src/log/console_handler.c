@@ -22,7 +22,7 @@
 
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 
@@ -262,7 +262,7 @@ bxilog_handler_param_p _param_new(bxilog_handler_p self,
 
     bxiassert(0 < loggername_width);
 
-    bxilog_console_handler_param_p result = bximem_calloc(sizeof(*result));
+    bxilog_console_handler_param_p result = _bximem_calloc(sizeof(*result));
     bxilog_handler_init_param(self, filters, &result->generic);
 
     result->stderr_level = level;
@@ -324,7 +324,7 @@ bxierr_p _process_exit(bxilog_console_handler_param_p data) {
                                 data->lost_logs,
                                 data->errset->total_seen_nb);
         bxilog_rawprint(str, STDERR_FILENO);
-        BXIFREE(str);
+        _BXIFREE(str);
     }
 
     return err;
@@ -400,7 +400,7 @@ bxierr_p _process_ierr(bxierr_p *err, bxilog_console_handler_param_p data) {
                                 "Fatal: error while processing internal error: %s",
                                 str);
         }
-        BXIFREE(str);
+        _BXIFREE(str);
     }
 
     if (data->errset->total_seen_nb > data->max_err) {
@@ -512,7 +512,7 @@ bxierr_p _internal_log_func(bxilog_level_e level,
                         data);
     BXIERR_CHAIN(err, err2);
 
-    BXIFREE(msg);
+    _BXIFREE(msg);
 
     return err;
 }

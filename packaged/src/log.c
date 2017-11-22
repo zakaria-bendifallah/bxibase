@@ -43,7 +43,7 @@
 #include <zmq.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -224,7 +224,7 @@ bxierr_p bxilog_finalize() {
               level_names[loggers[i]->level]);
     }
 
-    BXIFREE(loggers);
+    _BXIFREE(loggers);
 
     DEBUG(LOGGER, "Exiting bxilog");
     err = bxilog__finalize();
@@ -302,7 +302,7 @@ bxierr_p bxilog_flush(void) {
                                           FLUSH_CTRL_MSG_REQ, reply,
                                           FLUSH_CTRL_MSG_REP));
         }
-        BXIFREE(reply);
+        _BXIFREE(reply);
     }
     if (errlist->errors_nb != 0) {
         return bxierr_from_list(BXILOG_FLUSH_ERR,
@@ -330,7 +330,7 @@ void bxilog_display_loggers(int fd) {
         TMP = bxistr_new("\t%zu\t = %s\n", n, level_names[n]);
         rc = write(fd, TMP, strlen(TMP));
         bxiassert(-1 != rc);
-        BXIFREE(TMP);
+        _BXIFREE(TMP);
     }
     bxilog_logger_p * loggers;
     n = bxilog_registry_getall(&loggers);
@@ -341,10 +341,10 @@ void bxilog_display_loggers(int fd) {
         TMP = bxistr_new("\t%s\n", loggers[n]->name);
         rc = write(fd, TMP, strlen(TMP));
         bxiassert(-1 != rc);
-        BXIFREE(TMP);
+        _BXIFREE(TMP);
     }
 
-    BXIFREE(loggers);
+    _BXIFREE(loggers);
 }
 
 
@@ -362,14 +362,14 @@ void bxilog__wipeout() {
     bxiassert(0 == rc);
     if (SS_ONSTACK == sigstack.ss_flags && NULL != sigstack.ss_sp) {
 //        fprintf(stderr, "[I] Removing sigstack\n");
-        BXIFREE(sigstack.ss_sp);
+        _BXIFREE(sigstack.ss_sp);
     }
 }
 
 
 bxierr_p bxilog__init_globals() {
     BXILOG__GLOBALS->pid = getpid();
-    pthread_t * threads = bximem_calloc(BXILOG__GLOBALS->config->handlers_nb * sizeof(*threads));
+    pthread_t * threads = _bximem_calloc(BXILOG__GLOBALS->config->handlers_nb * sizeof(*threads));
     BXILOG__GLOBALS->internal_handlers_nb = 0;
     BXILOG__GLOBALS->handlers_threads = threads;
 
@@ -526,10 +526,10 @@ bxierr_p bxilog__stop_handlers(void) {
                                       "Wrong message received. Expected: %s, received: %s",
                                       EXIT_CTRL_MSG_REP, msg);
             bxierr_report(&tmp, STDERR_FILENO);
-            BXIFREE(msg);
+            _BXIFREE(msg);
             continue;
         }
-        BXIFREE(msg);
+        _BXIFREE(msg);
 
         bxierr_p handler_err;
         err2 = _join_handler(i, &handler_err);
@@ -616,7 +616,7 @@ bxierr_p _reset_globals() {
     UNUSED(rc); // Nothing to do on pthread_key_delete() see man page
     BXILOG__GLOBALS->tsd_key_once = PTHREAD_ONCE_INIT;
     BXILOG__GLOBALS->internal_handlers_nb = 0;
-    BXIFREE(BXILOG__GLOBALS->handlers_threads);
+    _BXIFREE(BXILOG__GLOBALS->handlers_threads);
 
     return err;
 }
@@ -651,7 +651,7 @@ bxierr_p _start_handler_thread(bxilog_handler_p handler, bxilog_handler_param_p 
     rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     bxiassert(rc == 0);
 
-    bxilog__handler_thread_bundle_p bundle = bximem_calloc(sizeof(*bundle));
+    bxilog__handler_thread_bundle_p bundle = _bximem_calloc(sizeof(*bundle));
     bundle->handler = handler;
     param->rank = BXILOG__GLOBALS->internal_handlers_nb;
     param->status = BXI_LOG_HANDLER_NOT_READY;
@@ -712,8 +712,8 @@ bxierr_p _sync_handler() {
     } else {
         BXILOG__GLOBALS->config->handlers_params[*rank]->status = BXI_LOG_HANDLER_READY;
     }
-    BXIFREE(msg);
-    BXIFREE(rank);
+    _BXIFREE(msg);
+    _BXIFREE(rank);
 
     return err;
 }

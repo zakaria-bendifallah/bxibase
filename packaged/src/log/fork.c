@@ -83,8 +83,8 @@ void _parent_before_fork(void) {
                                 "Detailed error is - %s",
                                 err_str);
         bxilog_rawprint(msg, STDERR_FILENO);
-        BXIFREE(msg);
-        BXIFREE(err_str);
+        _BXIFREE(msg);
+        _BXIFREE(err_str);
         bxierr_destroy(&err);
     }
     if (FINALIZING != BXILOG__GLOBALS->state) {

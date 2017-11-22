@@ -134,7 +134,7 @@ bxilog_config_p bxilog_netsnmp_config(const char * const progname) {
 
 
 bxilog_config_p bxilog_config_new(const char * const progname) {
-    bxilog_config_p config = bximem_calloc(sizeof(*config));
+    bxilog_config_p config = _bximem_calloc(sizeof(*config));
     config->progname = strdup(progname);
     config->tsd_log_buf_size = 128;
     config->handlers_nb = 0;
@@ -150,10 +150,10 @@ void bxilog_config_add_handler(bxilog_config_p self,
                                ...) {
 
     size_t new_size = self->handlers_nb + 1;
-    self->handlers = bximem_realloc(self->handlers,
+    self->handlers = _bximem_realloc(self->handlers,
                                     self->handlers_nb * sizeof(*self->handlers),
                                     new_size * sizeof(*self->handlers));
-    self->handlers_params = bximem_realloc(self->handlers_params,
+    self->handlers_params = _bximem_realloc(self->handlers_params,
                                            self->handlers_nb * sizeof(*self->handlers_params),
                                            new_size * sizeof(*self->handlers_params));
     self->handlers[self->handlers_nb] = handler;
@@ -178,9 +178,9 @@ bxierr_p bxilog__config_destroy(bxilog_config_p * config_p) {
             if (bxierr_isko(err)) bxierr_list_append(errlist, err);
         }
     }
-    BXIFREE(config->handlers);
-    BXIFREE(config->handlers_params);
-    BXIFREE(config->progname);
+    _BXIFREE(config->handlers);
+    _BXIFREE(config->handlers_params);
+    _BXIFREE(config->progname);
     bximem_destroy((char**) config_p);
     if (errlist->errors_nb > 0) {
         return bxierr_from_list(BXIERR_GROUP_CODE, errlist,
@@ -206,7 +206,7 @@ bxierr_p bxilog__config_loggers() {
 //                level_names[old_level],
 //                level_names[new_level]);
     }
-    BXIFREE(loggers);
+    _BXIFREE(loggers);
 
     return BXIERR_OK;
 }

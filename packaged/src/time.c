@@ -16,7 +16,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/err.h"
 #include "bxi/base/time.h"
@@ -95,7 +95,7 @@ bxierr_p bxitime_str(struct timespec * time, char ** result) {
     tm_p = localtime_r(&t, &dummy);
     if (tm_p == NULL) return bxierr_errno("Call to localtime_r() failed.");
 
-    *result = bximem_calloc(64);
+    *result = _bximem_calloc(64);
     size_t n = strftime(*result, 32, "%FT%T", tm_p);
     if (n == 0) return bxierr_gen("Function strftime() returned 0, this is a failure");
 

@@ -17,7 +17,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/err.h"
 
@@ -140,12 +140,12 @@ void bxistr_prefixer_init(bxistr_prefixer_p self,
     self->lines_nb = 0;
     self->allocated_lines_nb = 16;
 
-    self->lines = bximem_calloc(self->allocated_lines_nb * sizeof(*self->lines));
-    self->lines_len = bximem_calloc(self->allocated_lines_nb * sizeof(*self->lines_len));
+    self->lines = _bximem_calloc(self->allocated_lines_nb * sizeof(*self->lines));
+    self->lines_len = _bximem_calloc(self->allocated_lines_nb * sizeof(*self->lines_len));
 }
 
 bxistr_prefixer_p bxistr_prefixer_new(char * prefix, size_t prefix_len) {
-    bxistr_prefixer_p result = bximem_calloc(sizeof(*result));
+    bxistr_prefixer_p result = _bximem_calloc(sizeof(*result));
     bxistr_prefixer_init(result, prefix, prefix_len);
 
     result->allocated = true;
@@ -159,10 +159,10 @@ void bxistr_prefixer_destroy(bxistr_prefixer_p * self_p) {
 
 void bxistr_prefixer_cleanup(bxistr_prefixer_p self) {
     for (size_t i = 0; i < self->lines_nb; i++) {
-        BXIFREE(self->lines[i]);
+        _BXIFREE(self->lines[i]);
     }
-    BXIFREE(self->lines);
-    BXIFREE(self->lines_len);
+    _BXIFREE(self->lines);
+    _BXIFREE(self->lines_len);
 }
 
 bxierr_p bxistr_prefixer_line(char * line, size_t line_len, bool last, void * param) {
@@ -173,7 +173,7 @@ bxierr_p bxistr_prefixer_line(char * line, size_t line_len, bool last, void * pa
 
     size_t len = line_len + self->prefix_len;
     self->lines_len[self->lines_nb] = len;
-    char * result = bximem_calloc((len +1) * sizeof(*line));
+    char * result = _bximem_calloc((len +1) * sizeof(*line));
     strncpy(result, self->prefix, self->prefix_len);
     strncpy(result + self->prefix_len, line, line_len);
     self->lines[self->lines_nb] = result;
@@ -183,10 +183,10 @@ bxierr_p bxistr_prefixer_line(char * line, size_t line_len, bool last, void * pa
 
     if (self->lines_nb >= self->allocated_lines_nb) {
         size_t new_size = self->allocated_lines_nb * 2;
-        self->lines = bximem_realloc(self->lines,
+        self->lines = _bximem_realloc(self->lines,
                                      self->allocated_lines_nb * sizeof(*self->lines),
                                      new_size * sizeof(*self->lines));
-        self->lines_len = bximem_realloc(self->lines_len,
+        self->lines_len = _bximem_realloc(self->lines_len,
                                          self->allocated_lines_nb * sizeof(*self->lines_len),
                                          new_size * sizeof(*self->lines_len));
         self->allocated_lines_nb = new_size;
@@ -208,7 +208,7 @@ size_t bxistr_join(char * sep, size_t sep_len,
         }
     }
 
-    char * s = bximem_calloc((len + 1) * sizeof(*s));
+    char * s = _bximem_calloc((len + 1) * sizeof(*s));
     len = 0;
     for (size_t i = 0; i < lines_nb; i++) {
         strncpy(s + len, lines[i], lines_len[i]);
@@ -288,7 +288,7 @@ char * bxistr_mkshorter(char * s, size_t max_len, char sep) {
     bxiassert(NULL != s);
     bxiassert(0 < max_len);
 
-    char * const result = bximem_calloc((max_len + 1) * sizeof(*result));
+    char * const result = _bximem_calloc((max_len + 1) * sizeof(*result));
 
     size_t sep_nb = bxistr_count(s, sep);
     size_t i = 0;
@@ -323,7 +323,7 @@ bxierr_p bxistr_hex2bytes(char * s, size_t len, uint8_t ** pbuf) {
 
     size_t dlength = len / 2;
 
-    if (NULL == *pbuf) *pbuf = bximem_calloc(dlength * sizeof(**pbuf));
+    if (NULL == *pbuf) *pbuf = _bximem_calloc(dlength * sizeof(**pbuf));
     uint8_t * buf = *pbuf;
 
     size_t index = 0;
@@ -366,7 +366,7 @@ bxierr_p bxistr_bytes2hex(uint8_t * buf, size_t len, char ** ps) {
     if (NULL == buf) return bxierr_gen("Null pointer given for buf parameter.");
     if (NULL == ps) return bxierr_gen("Null pointer given for ps parameter");
 
-    if (NULL == *ps) *ps = bximem_calloc((len * 2 + 1) * sizeof(**ps));
+    if (NULL == *ps) *ps = _bximem_calloc((len * 2 + 1) * sizeof(**ps));
 
     char * out = *ps;
     out[len * 2] = '\0';

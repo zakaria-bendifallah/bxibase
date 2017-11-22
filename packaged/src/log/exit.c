@@ -15,7 +15,7 @@
 #include <sysexits.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -67,7 +67,7 @@ void bxilog_exit(int exit_code,
                                 "on stderr. Especially, it won't appear in the "
                                 "expected logging file.)\n", exit_code, str);
         bxilog_rawprint(msg, STDERR_FILENO);
-        BXIFREE(msg);
+        _BXIFREE(msg);
     } else {
         bxilog_logger_log(logger, level,
                           file, filelen,
@@ -75,7 +75,7 @@ void bxilog_exit(int exit_code,
                           line,
                           "Exiting with code %d, error is: %s", exit_code, str);
     }
-    BXIFREE(str);
+    _BXIFREE(str);
     bxierr_destroy(&err);
     err = bxitime_sleep(CLOCK_MONOTONIC, 0, 50000000);
     bxierr_destroy(&err);

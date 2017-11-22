@@ -63,7 +63,7 @@ static volatile sig_atomic_t FATAL_ERROR_IN_PROGRESS = 0;
 bxierr_p bxilog_install_sighandler(void) {
     // Allocate a special signal stack for SIGSEGV and the like
     stack_t sigstack;
-    sigstack.ss_sp = bximem_calloc(SIGSTKSZ);
+    sigstack.ss_sp = _bximem_calloc(SIGSTKSZ);
     sigstack.ss_size = SIGSTKSZ;
     sigstack.ss_flags = 0;
     errno = 0;
@@ -99,8 +99,8 @@ bxierr_p bxilog_install_sighandler(void) {
         char * str = strsignal(allsig_num[i]);
         DEBUG(LOGGER,
               "Signal handler set for %d: %s", allsig_num[i], str);
-        // Do not BXIFREE(str) since it is statically allocated as specified in the manual.
-        // BXIFREE(str);
+        // Do not _BXIFREE(str) since it is statically allocated as specified in the manual.
+        // _BXIFREE(str);
     }
     INFO(LOGGER, "Signal handlers set");
     return BXIERR_OK;
@@ -157,14 +157,14 @@ void _sig_handler(int signum, siginfo_t * siginfo, void * dummy) {
         bxierr_backtrace_str(&trace);
         str = bxistr_new("%s: %s\n%s\n", BXILOG__GLOBALS->config->progname,
                          sigstr, trace);
-        BXIFREE(trace);
+        _BXIFREE(trace);
     }
-    BXIFREE(sigstr);
+    _BXIFREE(sigstr);
 
     bxilog_rawprint(str, STDERR_FILENO);
 
     CRITICAL(LOGGER, "%s", str);
-    BXIFREE(str);
+    _BXIFREE(str);
     // Flush all logs before terminating -> ask handlers to stop.
     bxierr_p err = BXIERR_OK, err2;
     err2 = bxilog_flush();
@@ -176,8 +176,8 @@ void _sig_handler(int signum, siginfo_t * siginfo, void * dummy) {
         char * str = bxistr_new("Error while processing signal - %s\n",
                                 err_str);
         bxilog_rawprint(str, STDERR_FILENO);
-        BXIFREE(str);
-        BXIFREE(err_str);
+        _BXIFREE(str);
+        _BXIFREE(err_str);
     }
 
     // Wait some time before exiting

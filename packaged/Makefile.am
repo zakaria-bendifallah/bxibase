@@ -2,6 +2,7 @@ lib_LTLIBRARIES=lib/libbxibase.la
 
 lib_libbxibase_la_SOURCES=\
 		  src/version.c\
+		  src/mem_base.c\
 		  src/mem.c\
 		  src/str.c\
 		  src/err.c\

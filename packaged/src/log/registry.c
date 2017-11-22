@@ -17,7 +17,7 @@
 #include <pthread.h>
 
 #include "bxi/base/err.h"
-#include "bxi/base/mem.h"
+#include "bxi/base/mem_base.h"
 #include "bxi/base/str.h"
 #include "bxi/base/time.h"
 #include "bxi/base/zmq.h"
@@ -77,7 +77,7 @@ void bxilog_registry_add(bxilog_logger_p logger) {
 
     if (REGISTERED_LOGGERS == NULL) {
         size_t bytes = REGISTERED_LOGGERS_ARRAY_SIZE * sizeof(*REGISTERED_LOGGERS);
-        REGISTERED_LOGGERS = bximem_calloc(bytes);
+        REGISTERED_LOGGERS = _bximem_calloc(bytes);
         int rc = atexit(bxilog__wipeout);
         bxiassert(0 == rc);
 
@@ -85,7 +85,7 @@ void bxilog_registry_add(bxilog_logger_p logger) {
         size_t old_size = REGISTERED_LOGGERS_ARRAY_SIZE;
         REGISTERED_LOGGERS_ARRAY_SIZE *= 2;
         size_t bytes = REGISTERED_LOGGERS_ARRAY_SIZE * sizeof(*REGISTERED_LOGGERS);
-        REGISTERED_LOGGERS = bximem_realloc(REGISTERED_LOGGERS,
+        REGISTERED_LOGGERS = _bximem_realloc(REGISTERED_LOGGERS,
                                             old_size * sizeof(*REGISTERED_LOGGERS),
                                             bytes);
 
@@ -147,11 +147,11 @@ void bxilog_registry_del(bxilog_logger_p logger) {
 //            err_str = bxierr_str(err);
 //        }
 //        _display_err_msg(str);
-//        BXIFREE(str);
+//        _BXIFREE(str);
     } else REGISTERED_LOGGERS_NB--;
 
     if (0 == REGISTERED_LOGGERS_NB) {
-        BXIFREE(REGISTERED_LOGGERS);
+        _BXIFREE(REGISTERED_LOGGERS);
     } else {
         _sort();
     }
@@ -179,7 +179,7 @@ bxierr_p bxilog_registry_get(const char * logger_name, bxilog_logger_p * result)
     if (0 != rc) return bxierr_errno("Call to pthread_mutex_unlock() failed (rc=%d)", rc);
 
     if (NULL == *result) { // Not found
-        bxilog_logger_p self = bximem_calloc(sizeof(*self));
+        bxilog_logger_p self = _bximem_calloc(sizeof(*self));
         self->allocated = true;
         self->name = strdup(logger_name);
         self->name_length = strlen(logger_name) + 1;
@@ -196,7 +196,7 @@ size_t bxilog_registry_getall(bxilog_logger_p *loggers[]) {
     bxiassert(NULL != loggers);
     int rc = pthread_mutex_lock(&REGISTER_LOCK);
     bxiassert(0 == rc);
-    bxilog_logger_p * result = bximem_calloc(REGISTERED_LOGGERS_NB * sizeof(*result));
+    bxilog_logger_p * result = _bximem_calloc(REGISTERED_LOGGERS_NB * sizeof(*result));
     size_t j = 0;
     for (size_t i = 0; i < REGISTERED_LOGGERS_ARRAY_SIZE; i++) {
         if (NULL == REGISTERED_LOGGERS[i]) continue;
@@ -235,7 +235,7 @@ void bxilog__cfg_release_loggers() {
         }
         bxiassert(0 == REGISTERED_LOGGERS_NB);
         DBG("[I] Removing registered loggers\n");
-        BXIFREE(REGISTERED_LOGGERS);
+        _BXIFREE(REGISTERED_LOGGERS);
         REGISTERED_LOGGERS_ARRAY_SIZE = 0;
     }
 }
