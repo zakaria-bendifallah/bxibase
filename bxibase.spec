@@ -6,8 +6,8 @@
 #TODO: define your package name
 %define name bxibase
 
-# previous version 7.1.1
-%define version 8.0.0
+# previous version 8.0.0
+%define version 9.0.0
 
 
 # Using the .snapshot suffix helps the SVN tagging process.
@@ -22,6 +22,7 @@
 # %release in the src_dir variable!
 %define src_dir %{name}-%{version}
 %define src_tarall %{src_dir}.tar.gz
+%define pythonname %{?python_name}
 
 # Predefined variables:
 # {%_mandir} => normally /usr/share/man (depends on the PDP)
@@ -39,7 +40,11 @@ Prefix: /usr
 %define target_conf_dir /etc/
 %define target_bin_dir /usr/bin
 %define target_lib_dir /usr/lib*
+%if 0%{?python_name}
+%define target_python_lib_dir %{python_sitearch}
+%else
 %define target_python_lib_dir %{python2_sitearch}
+%endif
 %define target_man_dir %{_mandir}
 %define target_doc_dir /usr/share/doc/%{name}
 # @TODO : Support cases where BXI_BUILD_{SUB,}DIR variables are not defined
@@ -78,16 +83,11 @@ Provides: %{name}
 # BXI
 Requires: backtrace
 Requires: net-snmp
-Requires: python-six
 
 BuildRequires: backtrace-devel
 
 # External
 Requires: zeromq
-Requires: python-cffi >= 1.6.0
-Requires: python-configobj
-
-BuildRequires: python-cffi >= 1.6.0
 BuildRequires: zeromq-devel
 BuildRequires: gcc
 buildRequires: gcc-c++
@@ -98,6 +98,31 @@ BuildRequires: doxypypy
 BuildRequires: graphviz
 #BuildRequires: python-cffi >= 0.8.6
 
+
+
+%if 0%{?python_name}
+%package -n python%{pythonname}-%{name}
+Summary: Python Bxi Basic library
+Requires: %{name}
+%endif
+Requires: python%{pythonname}-cffi >= 1.6.0
+Requires: python%{pythonname}-configobj
+Requires: python%{pythonname}-six
+
+BuildRequires: python%{pythonname:}-cffi >= 1.6.0
+
+%if 0%{?python_name}
+#TODO: Give a description (seen by rpm -qi) (No more than 80 characters)
+%description -n python%{pythonname}-%{name}
+Python Bxi Basic library
+
+%package -n python%{pythonname}-%{name}-devel
+Summary: Python files required for compiling dependencies based on cffi
+Requires: %{name}-devel
+
+%description -n python%{pythonname}-%{name}-devel
+Python files required for compiling dependencies based on cffi
+%endif
 
 #TODO: Give a description (seen by rpm -qi) (No more than 80 characters)
 %description
@@ -118,6 +143,7 @@ Requires: zeromq-devel
 %description devel
 Header files providing the bxibase API
 
+
 %package tests
 Requires: %{name}
 Summary: Tests for the BXI base library
@@ -129,7 +155,7 @@ Test for the BXI base library
 Summary: Commands to manipulate and interact with bxilogs
 Requires: %{name}
 Requires: python-zmq >= 14.0.0
-BuildRequires: python-zmq >= 14.0.0
+BuildRequires: python%{pythonname}-zmq >= 14.0.0
 
 %description tools
 Commands to manipulate and interact with bxilogs
@@ -147,7 +173,9 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
     --with-tagfiles-prefix=%{src_tagfiles_prefix} \
     --with-tagfiles-suffix=%{src_tagfiles_suffix} \
     --with-htmldirs-prefix=%{target_htmldirs_prefix} \
-    --with-htmldirs-suffix=%{target_htmldirs_suffix}
+    --with-htmldirs-suffix=%{target_htmldirs_suffix} \
+    %{_python_env}
+
 
 ###############################################################################
 # The current directory is the one main directory of the tar
@@ -209,6 +237,9 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #%{_libdir}/lib*
 %{target_lib_dir}/lib*
+%if 0%{?python_name}
+%files -n python%{pythonname:}-%{name}
+%endif
 %{target_python_lib_dir}/*
 %exclude %{target_python_lib_dir}/bxi/*_cffi_def.py*
 %exclude %{target_python_lib_dir}/bxi/base/cffi_builder.py*
@@ -220,6 +251,9 @@ test "x$RPM_BUILD_ROOT" != "x" && rm -rf $RPM_BUILD_ROOT
 %files devel
 %{_includedir}/bxi/base/*.h
 %{_includedir}/bxi/base/log/*.h
+%if 0%{?python_name}
+%files -n python%{pythonname:}-%{name}-devel
+%endif
 %{target_python_lib_dir}/bxi/*_cffi_def.py*
 %{target_python_lib_dir}/bxi/base/cffi_builder.py*
 
